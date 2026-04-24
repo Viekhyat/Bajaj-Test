@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SRM Graph Intelligence</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <canvas id="bg-canvas"></canvas>
+    
+    <div class="overlay-grid"></div>
+
+    <div class="container">
+        <header>
+            <div class="badge">Nodal Intelligence Engine</div>
+            <h1 class="glitch" data-text="Hierarchy Processor">Hierarchy Processor</h1>
+            <p>Deploy edge relationships. Synthesize trees. Detect cycles.</p>
+        </header>
+
+        <main>
+            <div class="input-section holo-panel">
+                <div class="panel-glow"></div>
+                <div class="panel-content">
+                    <label for="edges-input">Data Linkage (Edges)</label>
+                    <div class="input-wrapper">
+                        <input type="text" id="edges-input" placeholder="e.g., A->B, A->C, B->D" autocomplete="off" />
+                        <div class="input-line"></div>
+                    </div>
+                    <p class="hint">Sys-Req: Format <span>X->Y</span>. Single uppercase vectors only.</p>
+                    
+                    <button id="submit-btn" class="cyber-btn">
+                        <span class="btn-text">INITIALIZE ANALYSIS</span>
+                        <span class="btn-glitch"></span>
+                    </button>
+                </div>
+            </div>
+
+            <div id="loading" class="hidden">
+                <div class="loader">
+                    <div class="ring"></div>
+                    <div class="ring"></div>
+                    <div class="ring"></div>
+                    <span class="loading-text">Constructing Graph Topology...</span>
+                </div>
+            </div>
+
+            <div id="error-container" class="hidden error-panel holo-panel">
+                <div class="panel-content">
+                    <div class="error-header">
+                        <svg viewBox="0 0 24 24" class="error-icon"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+                        <h3>System Exception</h3>
+                    </div>
+                    <p id="error-message"></p>
+                </div>
+            </div>
+
+            <div id="results-container" class="hidden result-panel holo-panel">
+                <div class="panel-glow"></div>
+                <div class="panel-content">
+                    <div class="result-header">
+                        <h2>Synthesis Output</h2>
+                        <div class="status-dot"></div>
+                    </div>
+                    <div class="terminal-window">
+                        <div class="terminal-header">
+                            <span class="btn close"></span>
+                            <span class="btn min"></span>
+                            <span class="btn max"></span>
+                            <span class="terminal-title">output.json</span>
+                        </div>
+                        <pre id="json-output"></pre>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
