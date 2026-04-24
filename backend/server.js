@@ -17,21 +17,20 @@ function validateInput(data) {
             invalid_entries.push(rawEdge);
             continue;
         }
-        
+
         let edge = rawEdge.trim();
-        if (edge === "") continue;
 
         const match = edge.match(/^([A-Z])->([A-Z])$/);
         if (!match) {
-            invalid_entries.push(edge);
+            invalid_entries.push(rawEdge);
             continue;
         }
-        
+
         const u = match[1];
         const v = match[2];
 
         if (u === v) {
-            invalid_entries.push(edge);
+            invalid_entries.push(rawEdge);
             continue;
         }
 
@@ -56,12 +55,12 @@ function buildGraph(validEdges) {
     for (const edge of validEdges) {
         const u = edge[0];
         const v = edge[3];
-        
+
         allNodes.add(u);
         allNodes.add(v);
 
         if (!adjList[u]) adjList[u] = [];
-        if (!adjList[v]) adjList[v] = []; 
+        if (!adjList[v]) adjList[v] = [];
 
         if (parentMap[v]) {
             continue;
@@ -95,44 +94,48 @@ function detectCyclesAndBuildHierarchies(adjList, parentMap, allNodes) {
     let total_cycles = 0;
     let largest_tree_root = null;
     let max_depth = 0;
-    
+
     const visited = new Set();
     const recStack = new Set();
-    
+
     function dfs(node, path) {
         if (recStack.has(node)) return true;
         if (visited.has(node)) return false;
-        
+
         visited.add(node);
         recStack.add(node);
         path.push(node);
-        
+
         let hasCycle = false;
         for (const neighbor of adjList[node]) {
             if (dfs(neighbor, path)) {
                 hasCycle = true;
             }
         }
-        
+
         recStack.delete(node);
         return hasCycle;
     }
 
     const nodes = Array.from(allNodes);
     const roots = nodes.filter(n => !parentMap[n]).sort();
-    
+
     for (const root of roots) {
         const path = [];
         const hasCycle = dfs(root, path);
-        
+
         if (!hasCycle) {
             const treeObj = {};
             treeObj[root] = buildTree(root, adjList);
             const depth = calculateDepth(root, adjList);
-            
-            hierarchies.push(treeObj);
+
+            hierarchies.push({
+                root: root,
+                tree: treeObj,
+                depth: depth
+            });
             total_trees++;
-            
+
             if (depth > max_depth) {
                 max_depth = depth;
                 largest_tree_root = root;
@@ -150,17 +153,17 @@ function detectCyclesAndBuildHierarchies(adjList, parentMap, allNodes) {
             total_cycles++;
         }
     }
-    
+
     const unvisited = nodes.filter(n => !visited.has(n));
     while (unvisited.length > 0) {
         const startNode = unvisited[0];
         const path = [];
         const cycleDetected = dfs(startNode, path);
-        
+
         if (cycleDetected) {
             path.sort();
             const cycleRoot = path[0];
-            
+
             hierarchies.push({
                 root: cycleRoot,
                 tree: {},
@@ -168,7 +171,7 @@ function detectCyclesAndBuildHierarchies(adjList, parentMap, allNodes) {
             });
             total_cycles++;
         }
-        
+
         for (let i = unvisited.length - 1; i >= 0; i--) {
             if (visited.has(unvisited[i])) {
                 unvisited.splice(i, 1);
@@ -198,9 +201,9 @@ app.post('/bfhl', (req, res) => {
         const { hierarchies, summary } = detectCyclesAndBuildHierarchies(adjList, parentMap, allNodes);
 
         const response = {
-            user_id: "antigravity_24042026",
-            email_id: "antigravity@example.com",
-            college_roll_number: "SRM12345678",
+            user_id: "Viekhyat_Khare_210322006",
+            email_id: "vk8417@srmist.edu.in",
+            college_roll_number: "RA2311026010062",
             hierarchies,
             invalid_entries,
             duplicate_edges,

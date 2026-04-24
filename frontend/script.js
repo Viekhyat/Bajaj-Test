@@ -39,7 +39,7 @@ async function processData() {
     resultsContainer.classList.add('hidden');
     
     // Parse and validate input
-    const dataArray = inputStr.split(',').map(s => s.trim()).filter(s => s.length > 0);
+    const dataArray = inputStr.split(',').map(s => s.replace(/["']/g, '').trim()).filter(s => s.length > 0);
     
     if (dataArray.length === 0) {
         showError("Please enter at least one edge (e.g. A->B).");
@@ -68,6 +68,36 @@ async function processData() {
 
             // Display results with subtle highlighting
             jsonOutput.innerHTML = syntaxHighlight(result);
+            
+            // Populate Dashboard
+            document.getElementById('stat-trees').textContent = result.summary.total_trees;
+            document.getElementById('stat-cycles').textContent = result.summary.total_cycles;
+            document.getElementById('stat-largest-root').textContent = result.summary.largest_tree_root || 'None';
+
+            const invalidList = document.getElementById('list-invalid');
+            invalidList.innerHTML = '';
+            if(result.invalid_entries.length > 0) {
+                result.invalid_entries.forEach(entry => {
+                    const li = document.createElement('li');
+                    li.textContent = entry;
+                    invalidList.appendChild(li);
+                });
+            } else {
+                invalidList.innerHTML = '<li style="opacity:0.5">None</li>';
+            }
+
+            const dupList = document.getElementById('list-duplicates');
+            dupList.innerHTML = '';
+            if(result.duplicate_edges.length > 0) {
+                result.duplicate_edges.forEach(entry => {
+                    const li = document.createElement('li');
+                    li.textContent = entry;
+                    dupList.appendChild(li);
+                });
+            } else {
+                dupList.innerHTML = '<li style="opacity:0.5">None</li>';
+            }
+
             resultsContainer.classList.remove('hidden');
         }, 400);
         

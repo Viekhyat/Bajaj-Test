@@ -48,13 +48,52 @@
                 <p id="error-message"></p>
             </div>
 
-            <div id="results-container" class="hidden card results-card">
-                <div class="results-header">
-                    <h2>Analysis Results</h2>
-                    <span class="badge">Success</span>
+            <div id="results-container" class="hidden">
+                <div class="dashboard">
+                    <div class="summary-cards">
+                        <div class="stat-card">
+                            <div class="stat-icon">🌲</div>
+                            <div class="stat-details">
+                                <span class="stat-value" id="stat-trees">0</span>
+                                <span class="stat-label">Valid Trees</span>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">🔄</div>
+                            <div class="stat-details">
+                                <span class="stat-value" id="stat-cycles">0</span>
+                                <span class="stat-label">Cycles Detected</span>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">👑</div>
+                            <div class="stat-details">
+                                <span class="stat-value" id="stat-largest-root">-</span>
+                                <span class="stat-label">Largest Root</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="lists-row">
+                        <div class="list-card error-list-card">
+                            <h4>Invalid Entries</h4>
+                            <ul id="list-invalid"></ul>
+                        </div>
+                        <div class="list-card warn-list-card">
+                            <h4>Duplicate Edges</h4>
+                            <ul id="list-duplicates"></ul>
+                        </div>
+                    </div>
                 </div>
-                <div class="code-block-wrapper">
-                    <pre id="json-output"></pre>
+
+                <div class="card results-card">
+                    <div class="results-header">
+                        <h2>Raw JSON Data</h2>
+                        <span class="badge">Success</span>
+                    </div>
+                    <div class="code-block-wrapper">
+                        <pre id="json-output"></pre>
+                    </div>
                 </div>
             </div>
         </main>
