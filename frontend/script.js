@@ -1,5 +1,5 @@
 document.getElementById('submit-btn').addEventListener('click', processData);
-document.getElementById('edges-input').addEventListener('keypress', function(e) {
+document.getElementById('edges-input').addEventListener('keypress', function (e) {
     if (e.key === 'Enter') {
         processData();
     }
@@ -7,7 +7,7 @@ document.getElementById('edges-input').addEventListener('keypress', function(e) 
 
 function syntaxHighlight(json) {
     if (typeof json != 'string') {
-         json = JSON.stringify(json, undefined, 2);
+        json = JSON.stringify(json, undefined, 2);
     }
     json = json.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     return json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, function (match) {
@@ -37,10 +37,10 @@ async function processData() {
     // Reset UI state
     errorContainer.classList.add('hidden');
     resultsContainer.classList.add('hidden');
-    
+
     // Parse and validate input
     const dataArray = inputStr.split(',').map(s => s.replace(/["']/g, '').trim()).filter(s => s.length > 0);
-    
+
     if (dataArray.length === 0) {
         showError("Please enter at least one edge (e.g. A->B).");
         return;
@@ -68,7 +68,7 @@ async function processData() {
 
             // Display results with subtle highlighting
             jsonOutput.innerHTML = syntaxHighlight(result);
-            
+
             // Populate Dashboard
             document.getElementById('stat-trees').textContent = result.summary.total_trees;
             document.getElementById('stat-cycles').textContent = result.summary.total_cycles;
@@ -76,7 +76,7 @@ async function processData() {
 
             const invalidList = document.getElementById('list-invalid');
             invalidList.innerHTML = '';
-            if(result.invalid_entries.length > 0) {
+            if (result.invalid_entries.length > 0) {
                 result.invalid_entries.forEach(entry => {
                     const li = document.createElement('li');
                     li.textContent = entry;
@@ -88,7 +88,7 @@ async function processData() {
 
             const dupList = document.getElementById('list-duplicates');
             dupList.innerHTML = '';
-            if(result.duplicate_edges.length > 0) {
+            if (result.duplicate_edges.length > 0) {
                 result.duplicate_edges.forEach(entry => {
                     const li = document.createElement('li');
                     li.textContent = entry;
@@ -100,7 +100,7 @@ async function processData() {
 
             resultsContainer.classList.remove('hidden');
         }, 400);
-        
+
     } catch (err) {
         loading.classList.add('hidden');
         showError("Failed to connect to the backend server. Please ensure it is running on port 3000.");
