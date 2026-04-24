@@ -49,7 +49,7 @@ async function processData() {
     loading.classList.remove('hidden');
 
     try {
-        const response = await fetch('http://localhost:3000/bfhl', {
+        const response = await fetch('https://bajaj-test-viekhyat.onrender.com/bfhl', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ data: dataArray })
