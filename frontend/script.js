@@ -1,72 +1,10 @@
-// Add Canvas Network Background
-const canvas = document.getElementById('bg-canvas');
-const ctx = canvas.getContext('2d');
-
-let width, height;
-let particles = [];
-
-function initCanvas() {
-    width = canvas.width = window.innerWidth;
-    height = canvas.height = window.innerHeight;
-    particles = [];
-    const numParticles = Math.floor((width * height) / 15000);
-    
-    for(let i=0; i<numParticles; i++) {
-        particles.push({
-            x: Math.random() * width,
-            y: Math.random() * height,
-            vx: (Math.random() - 0.5) * 0.5,
-            vy: (Math.random() - 0.5) * 0.5,
-            radius: Math.random() * 2 + 1
-        });
-    }
-}
-
-function drawCanvas() {
-    ctx.clearRect(0, 0, width, height);
-    
-    // Update and draw particles
-    for(let i=0; i<particles.length; i++) {
-        let p = particles[i];
-        p.x += p.vx;
-        p.y += p.vy;
-        
-        if(p.x < 0 || p.x > width) p.vx *= -1;
-        if(p.y < 0 || p.y > height) p.vy *= -1;
-        
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-        ctx.fillStyle = 'rgba(0, 240, 255, 0.5)';
-        ctx.fill();
-        
-        // Draw connections
-        for(let j=i+1; j<particles.length; j++) {
-            let p2 = particles[j];
-            let dx = p.x - p2.x;
-            let dy = p.y - p2.y;
-            let dist = Math.sqrt(dx*dx + dy*dy);
-            
-            if(dist < 120) {
-                ctx.beginPath();
-                ctx.moveTo(p.x, p.y);
-                ctx.lineTo(p2.x, p2.y);
-                ctx.strokeStyle = `rgba(138, 43, 226, ${1 - dist/120})`;
-                ctx.lineWidth = 0.5;
-                ctx.stroke();
-            }
-        }
-    }
-    requestAnimationFrame(drawCanvas);
-}
-
-window.addEventListener('resize', initCanvas);
-initCanvas();
-drawCanvas();
-
-// Form Handling
 document.getElementById('submit-btn').addEventListener('click', processData);
+document.getElementById('edges-input').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        processData();
+    }
+});
 
-// Syntax Highlighter Function
 function syntaxHighlight(json) {
     if (typeof json != 'string') {
          json = JSON.stringify(json, undefined, 2);
@@ -96,15 +34,15 @@ async function processData() {
     const loading = document.getElementById('loading');
     const jsonOutput = document.getElementById('json-output');
 
-    // Reset UI
+    // Reset UI state
     errorContainer.classList.add('hidden');
     resultsContainer.classList.add('hidden');
     
-    // Parse input
+    // Parse and validate input
     const dataArray = inputStr.split(',').map(s => s.trim()).filter(s => s.length > 0);
     
     if (dataArray.length === 0) {
-        showError("Data stream empty. Please input vectors.");
+        showError("Please enter at least one edge (e.g. A->B).");
         return;
     }
 
@@ -113,36 +51,29 @@ async function processData() {
     try {
         const response = await fetch('http://localhost:3000/bfhl', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ data: dataArray })
         });
 
         const result = await response.json();
 
-        // Artificial delay for cool loading effect
+        // Small delay for smooth UX transition
         setTimeout(() => {
             loading.classList.add('hidden');
 
             if (!response.ok) {
-                showError(result.error || "Graph anomaly detected.");
+                showError(result.error || "An error occurred while processing the request.");
                 return;
             }
 
-            // Display results with syntax highlighting
+            // Display results with subtle highlighting
             jsonOutput.innerHTML = syntaxHighlight(result);
             resultsContainer.classList.remove('hidden');
-            
-            // Re-trigger animation
-            resultsContainer.style.animation = 'none';
-            resultsContainer.offsetHeight; /* trigger reflow */
-            resultsContainer.style.animation = null;
-        }, 800);
+        }, 400);
         
     } catch (err) {
         loading.classList.add('hidden');
-        showError("Neural link severed. Backend server offline.");
+        showError("Failed to connect to the backend server. Please ensure it is running on port 3000.");
     }
 }
 
@@ -152,10 +83,3 @@ function showError(msg) {
     errorMessage.textContent = msg;
     errorContainer.classList.remove('hidden');
 }
-
-// Allow pressing Enter to submit
-document.getElementById('edges-input').addEventListener('keypress', function(e) {
-    if (e.key === 'Enter') {
-        processData();
-    }
-});

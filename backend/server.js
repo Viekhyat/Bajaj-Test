@@ -5,110 +5,134 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 
-app.post('/bfhl', (req, res) => {
-    try {
-        const data = req.body.data;
-        if (!Array.isArray(data)) {
-            return res.status(400).json({ error: "Invalid input: data must be an array" });
+function validateInput(data) {
+    const validEdges = [];
+    const invalid_entries = [];
+    const duplicate_edges = [];
+    const seen_edges = new Set();
+    const duplicate_set = new Set();
+
+    for (let rawEdge of data) {
+        if (typeof rawEdge !== 'string') {
+            invalid_entries.push(rawEdge);
+            continue;
+        }
+        
+        let edge = rawEdge.trim();
+        if (edge === "") continue;
+
+        const match = edge.match(/^([A-Z])->([A-Z])$/);
+        if (!match) {
+            invalid_entries.push(edge);
+            continue;
+        }
+        
+        const u = match[1];
+        const v = match[2];
+
+        if (u === v) {
+            invalid_entries.push(edge);
+            continue;
         }
 
-        const invalid_entries = [];
-        const duplicate_edges = [];
-        const seen_edges = new Set();
-        const duplicate_set = new Set();
-
-        const adjList = {};
-        const parentMap = {};
-        const allNodes = new Set();
-
-        for (let rawEdge of data) {
-            if (typeof rawEdge !== 'string') {
-                invalid_entries.push(rawEdge);
-                continue;
+        if (seen_edges.has(edge)) {
+            if (!duplicate_set.has(edge)) {
+                duplicate_edges.push(edge);
+                duplicate_set.add(edge);
             }
-            const edge = rawEdge.trim();
-            const match = edge.match(/^([A-Z])->([A-Z])$/);
-            if (!match) {
-                invalid_entries.push(edge);
-                continue;
-            }
-            const u = match[1];
-            const v = match[2];
-
-            if (u === v) {
-                invalid_entries.push(edge);
-                continue;
-            }
-
-            if (seen_edges.has(edge)) {
-                if (!duplicate_set.has(edge)) {
-                    duplicate_edges.push(edge);
-                    duplicate_set.add(edge);
-                }
-                continue;
-            }
-            seen_edges.add(edge);
-
-            // Multi-parent rule
-            if (parentMap[v]) {
-                continue; 
-            }
-
-            parentMap[v] = u;
-            if (!adjList[u]) adjList[u] = [];
-            adjList[u].push(v);
-
-            allNodes.add(u);
-            allNodes.add(v);
+            continue;
         }
+        seen_edges.add(edge);
+        validEdges.push(edge);
+    }
+    return { validEdges, invalid_entries, duplicate_edges };
+}
 
-        // Ensure all nodes are in adjList
-        for (let node of allNodes) {
-            if (!adjList[node]) adjList[node] = [];
+function buildGraph(validEdges) {
+    const adjList = {};
+    const parentMap = {};
+    const allNodes = new Set();
+
+    for (const edge of validEdges) {
+        const u = edge[0];
+        const v = edge[3];
+        
+        allNodes.add(u);
+        allNodes.add(v);
+
+        if (!adjList[u]) adjList[u] = [];
+        if (!adjList[v]) adjList[v] = []; 
+
+        if (parentMap[v]) {
+            continue;
         }
+        parentMap[v] = u;
+        adjList[u].push(v);
+    }
 
-        const hierarchies = [];
-        let total_trees = 0;
-        let total_cycles = 0;
-        let largest_tree_root = null;
-        let max_depth = 0; // The prompt says depth = number of nodes in longest path. For a single node, depth is 1.
+    return { adjList, parentMap, allNodes };
+}
 
-        const visited = new Set();
+function buildTree(node, adjList) {
+    const tree = {};
+    for (const child of adjList[node]) {
+        tree[child] = buildTree(child, adjList);
+    }
+    return tree;
+}
 
-        function buildTree(node) {
-            const tree = {};
-            for (const child of adjList[node]) {
-                tree[child] = buildTree(child);
+function calculateDepth(node, adjList) {
+    let maxChildDepth = 0;
+    for (const child of adjList[node]) {
+        maxChildDepth = Math.max(maxChildDepth, calculateDepth(child, adjList));
+    }
+    return 1 + maxChildDepth;
+}
+
+function detectCyclesAndBuildHierarchies(adjList, parentMap, allNodes) {
+    const hierarchies = [];
+    let total_trees = 0;
+    let total_cycles = 0;
+    let largest_tree_root = null;
+    let max_depth = 0;
+    
+    const visited = new Set();
+    const recStack = new Set();
+    
+    function dfs(node, path) {
+        if (recStack.has(node)) return true;
+        if (visited.has(node)) return false;
+        
+        visited.add(node);
+        recStack.add(node);
+        path.push(node);
+        
+        let hasCycle = false;
+        for (const neighbor of adjList[node]) {
+            if (dfs(neighbor, path)) {
+                hasCycle = true;
             }
-            return tree;
         }
+        
+        recStack.delete(node);
+        return hasCycle;
+    }
 
-        function getDepth(node) {
-            let maxChildDepth = 0;
-            for (const child of adjList[node]) {
-                maxChildDepth = Math.max(maxChildDepth, getDepth(child));
-            }
-            return 1 + maxChildDepth;
-        }
-
-        const rootsList = Array.from(allNodes).filter(n => !parentMap[n]).sort();
-        for (const root of rootsList) {
-            const q = [root];
-            while (q.length > 0) {
-                const curr = q.pop();
-                visited.add(curr);
-                for (const child of adjList[curr]) {
-                    q.push(child);
-                }
-            }
-
+    const nodes = Array.from(allNodes);
+    const roots = nodes.filter(n => !parentMap[n]).sort();
+    
+    for (const root of roots) {
+        const path = [];
+        const hasCycle = dfs(root, path);
+        
+        if (!hasCycle) {
             const treeObj = {};
-            treeObj[root] = buildTree(root);
-            const depth = getDepth(root);
-
+            treeObj[root] = buildTree(root, adjList);
+            const depth = calculateDepth(root, adjList);
+            
             hierarchies.push(treeObj);
             total_trees++;
-
+            
             if (depth > max_depth) {
                 max_depth = depth;
                 largest_tree_root = root;
@@ -117,73 +141,61 @@ app.post('/bfhl', (req, res) => {
                     largest_tree_root = root;
                 }
             }
-        }
-
-        const unvisited = Array.from(allNodes).filter(n => !visited.has(n));
-        for (const node of unvisited) {
-            if (visited.has(node)) continue;
-
-            let curr = node;
-            const pathSeen = new Set();
-            while (!pathSeen.has(curr)) {
-                pathSeen.add(curr);
-                curr = parentMap[curr];
-            }
-
-            const cycleNodes = [];
-            let cNode = curr;
-            do {
-                cycleNodes.push(cNode);
-                cNode = parentMap[cNode];
-            } while (cNode !== curr);
-
-            cycleNodes.sort();
-            const cycleRoot = cycleNodes[0];
-
-            const q = [...cycleNodes];
-            while (q.length > 0) {
-                const n = q.pop();
-                visited.add(n);
-                for (const child of adjList[n]) {
-                    if (!visited.has(child)) {
-                        q.push(child);
-                    }
-                }
-            }
-
-            function buildTreeSafe(n, visitedSet) {
-                const tree = {};
-                for (const child of adjList[n]) {
-                    if (!visitedSet.has(child)) {
-                        visitedSet.add(child);
-                        tree[child] = buildTreeSafe(child, visitedSet);
-                    }
-                }
-                return tree;
-            }
-
-            const treeForCycle = {};
-            const cycleVisitedSet = new Set([cycleRoot]);
-            for (const child of adjList[cycleRoot]) {
-                if (!cycleVisitedSet.has(child)) {
-                    cycleVisitedSet.add(child);
-                    treeForCycle[child] = buildTreeSafe(child, cycleVisitedSet);
-                }
-            }
-
+        } else {
             hierarchies.push({
-                root: cycleRoot,
-                tree: treeForCycle,
+                root: root,
+                tree: {},
                 has_cycle: true
             });
             total_cycles++;
         }
+    }
+    
+    const unvisited = nodes.filter(n => !visited.has(n));
+    while (unvisited.length > 0) {
+        const startNode = unvisited[0];
+        const path = [];
+        const cycleDetected = dfs(startNode, path);
+        
+        if (cycleDetected) {
+            path.sort();
+            const cycleRoot = path[0];
+            
+            hierarchies.push({
+                root: cycleRoot,
+                tree: {},
+                has_cycle: true
+            });
+            total_cycles++;
+        }
+        
+        for (let i = unvisited.length - 1; i >= 0; i--) {
+            if (visited.has(unvisited[i])) {
+                unvisited.splice(i, 1);
+            }
+        }
+    }
 
-        const summary = {
+    return {
+        hierarchies,
+        summary: {
             total_trees,
             total_cycles,
             largest_tree_root
-        };
+        }
+    };
+}
+
+app.post('/bfhl', (req, res) => {
+    try {
+        const data = req.body.data;
+        if (!Array.isArray(data)) {
+            return res.status(400).json({ error: "Invalid input: data must be an array" });
+        }
+
+        const { validEdges, invalid_entries, duplicate_edges } = validateInput(data);
+        const { adjList, parentMap, allNodes } = buildGraph(validEdges);
+        const { hierarchies, summary } = detectCyclesAndBuildHierarchies(adjList, parentMap, allNodes);
 
         const response = {
             user_id: "antigravity_24042026",
